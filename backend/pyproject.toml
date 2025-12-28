@@ -1,0 +1,21 @@
+[project]
+name = "url-ingestion-pipeline"
+version = "0.1.0"
+description = "A pipeline for ingesting Docusaurus URLs, generating embeddings, and storing in Qdrant"
+authors = [{name = "Developer", email = "developer@example.com"}]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.2",
+    "cohere>=4.4.3",
+    "qdrant-client>=1.7.0",
+    "python-dotenv>=1.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
