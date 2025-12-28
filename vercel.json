@@ -3,7 +3,6 @@
   "functions": {
     "api/[[...path]].py": {
       "runtime": "python3.10",
-      "maxLambdaSize": "15mb",
       "memory": 1024,
       "timeout": 30
     }
