@@ -40,7 +40,7 @@ export const RAGChatComponent: React.FC<RAGChatComponentProps> = ({ chapterId, o
 
     try {
       // Call the actual backend API to process the query
-      const response = await chatAPI.sendMessage(inputValue);
+      const response = await chatAPI.sendMessage(inputValue, "default-book", `session_${Date.now()}`);
 
       const assistantMessage: ChatInteraction = {
         id: Date.now() + 1,

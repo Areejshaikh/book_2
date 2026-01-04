@@ -1,10 +1,10 @@
 from sqlmodel import create_engine, Session
-from .config.settings import settings
+from ..config.settings import settings
 
 
-# Create the database engine using the effective database URL
+# Create the database engine using the database URL
 engine = create_engine(
-    settings.effective_database_url,
+    settings.database_url,
     echo=True,  # Set to False in production
     pool_pre_ping=True  # Ensures connections are valid before use
 )

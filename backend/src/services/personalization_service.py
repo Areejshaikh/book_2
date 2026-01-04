@@ -1,7 +1,12 @@
 from typing import List, Optional
-from src.database import SessionLocal
-from src.models.user import UserProfile
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from src.database.session import engine
+from src.models.user_profile import UserProfile
 from src.models.chapter import TextbookChapter as Chapter
+
+# Create SessionLocal using the engine from database.session
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class PersonalizationService:
@@ -26,13 +31,13 @@ class PersonalizationService:
             profile = self.get_user_profile(user_id)
             if not profile:
                 return chapter.content  # Return original content if no profile exists
-            
+
             # Adjust content based on the user's background level
             content = chapter.content
-            
+
             # For example, simplify content for beginners, add more detail for advanced users
             background_level = profile.background_level or "intermediate"
-            
+
             if background_level == "beginner":
                 # Simplify content for beginners
                 # This would involve actual content transformation in a real implementation
@@ -40,7 +45,7 @@ class PersonalizationService:
             elif background_level == "advanced":
                 # Add more depth for advanced users
                 content = self._enrich_content(content)
-            
+
             return content
         finally:
             self.db.close()

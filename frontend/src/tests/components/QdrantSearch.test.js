@@ -3,73 +3,94 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import QdrantSearch from './QdrantSearch';
 
-// Mock fetch API for testing
-global.fetch = jest.fn();
-
 describe('QdrantSearch Component', () => {
+  let originalFetch;
+
+  beforeAll(() => {
+    originalFetch = global.fetch;
+    global.fetch = jest.fn();
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
   beforeEach(() => {
     fetch.mockClear();
   });
 
   test('renders search input and button', () => {
     render(<QdrantSearch />);
-    
-    const inputElement = screen.getByPlaceholderText('Enter your search query...');
-    const buttonElement = screen.getByRole('button', { name: /Search/i });
-    
-    expect(inputElement).toBeInTheDocument();
-    expect(buttonElement).toBeInTheDocument();
+
+    expect(
+      screen.getByPlaceholderText('Enter your search query...')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', { name: /search/i })
+    ).toBeInTheDocument();
   });
 
   test('updates input value on change', () => {
     render(<QdrantSearch />);
-    
-    const inputElement = screen.getByPlaceholderText('Enter your search query...');
-    fireEvent.change(inputElement, { target: { value: 'test query' } });
-    
-    expect(inputElement.value).toBe('test query');
+
+    const input = screen.getByPlaceholderText('Enter your search query...');
+    fireEvent.change(input, { target: { value: 'test query' } });
+
+    expect(input.value).toBe('test query');
   });
 
-  test('submits search query when button is clicked', async () => {
+  test('submits search query and displays results', async () => {
     const mockResults = [
       {
         content: 'Test content snippet',
         source: 'https://example.com/test',
-        score: 0.92
-      }
+        score: 0.92,
+      },
     ];
-    
+
     fetch.mockResolvedValueOnce({
-      json: () => Promise.resolve({ results: mockResults }),
-      ok: true
+      ok: true,
+      status: 200,
+      json: async () => ({ results: mockResults }),
     });
 
     render(<QdrantSearch />);
-    
-    const inputElement = screen.getByPlaceholderText('Enter your search query...');
-    fireEvent.change(inputElement, { target: { value: 'test query' } });
-    
-    const buttonElement = screen.getByRole('button', { name: /Search/i });
-    fireEvent.click(buttonElement);
-    
+
+    fireEvent.change(
+      screen.getByPlaceholderText('Enter your search query...'),
+      { target: { value: 'test query' } }
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /search/i })
+    );
+
     await waitFor(() => {
-      expect(screen.getByText('Test content snippet')).toBeInTheDocument();
+      expect(
+        screen.getByText('Test content snippet')
+      ).toBeInTheDocument();
     });
   });
 
   test('shows error message when API call fails', async () => {
     fetch.mockRejectedValueOnce(new Error('Network error'));
-    
+
     render(<QdrantSearch />);
-    
-    const inputElement = screen.getByPlaceholderText('Enter your search query...');
-    fireEvent.change(inputElement, { target: { value: 'test query' } });
-    
-    const buttonElement = screen.getByRole('button', { name: /Search/i });
-    fireEvent.click(buttonElement);
-    
+
+    fireEvent.change(
+      screen.getByPlaceholderText('Enter your search query...'),
+      { target: { value: 'test query' } }
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /search/i })
+    );
+
     await waitFor(() => {
-      expect(screen.getByText(/Failed to retrieve results/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/failed to retrieve results/i)
+      ).toBeInTheDocument();
     });
   });
 });

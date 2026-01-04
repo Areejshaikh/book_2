@@ -9,14 +9,23 @@ class QdrantStore:
 
     def __init__(self):
         """Initialize the Qdrant client with connection details from config"""
-        if not Config.QDRANT_URL or not Config.QDRANT_API_KEY:
-            raise ValueError("QDRANT_URL and QDRANT_API_KEY are required in environment variables")
+        if not Config.QDRANT_URL:
+            raise ValueError("QDRANT_URL is required in environment variables")
 
-        self.client = QdrantClient(
-            url=Config.QDRANT_URL,
-            api_key=Config.QDRANT_API_KEY,
-            prefer_grpc=False  # Using HTTP for simplicity
-        )
+        # Initialize Qdrant client with API key if provided
+        if Config.QDRANT_API_KEY:
+            self.client = QdrantClient(
+                url=Config.QDRANT_URL,
+                api_key=Config.QDRANT_API_KEY,
+                prefer_grpc=False  # Using HTTP for simplicity
+            )
+        else:
+            # For local Qdrant instances without authentication
+            self.client = QdrantClient(
+                url=Config.QDRANT_URL,
+                prefer_grpc=False
+            )
+
         self.collection_name = Config.COLLECTION_NAME
 
     def create_collection(self, collection_name: Optional[str] = None) -> bool:
@@ -33,7 +42,8 @@ class QdrantStore:
 
         try:
             # The Cohere embed-multilingual-v2.0 model returns 768-dimension vectors
-            vector_size = 768  # Updated for the multilingual-v2.0 model
+            # But we'll use the vector size from the config if available, defaulting to 768
+            vector_size = 768  # Default for Cohere multilingual-v2.0 model
 
             # Create the collection with the correct vector size
             # If it already exists with wrong dimensions, we'll delete and recreate

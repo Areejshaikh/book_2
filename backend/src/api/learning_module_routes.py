@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from src.auth.authentication import get_current_active_user, get_db
-from src.models.textbook_models import User, Textbook, LearningModule
+from src.database.models import User  # Use User from database models
+from src.models.textbook_models import Textbook, LearningModule
 from src.auth.authentication import get_current_user
 
 router = APIRouter()
@@ -34,7 +35,7 @@ def get_learning_module(
         LearningModule.id == module_id,
         Textbook.owner_id == current_user.id
     ).first()
-    
+
     if not module:
         raise HTTPException(status_code=404, detail="Learning module not found")
     return module
@@ -55,10 +56,10 @@ def create_learning_module(
         Textbook.id == textbook_id,
         Textbook.owner_id == current_user.id
     ).first()
-    
+
     if not textbook:
         raise HTTPException(status_code=404, detail="Textbook not found or access denied")
-    
+
     module = LearningModule(
         title=title,
         content=content,
@@ -86,17 +87,17 @@ def update_learning_module(
         LearningModule.id == module_id,
         Textbook.owner_id == current_user.id
     ).first()
-    
+
     if not module:
         raise HTTPException(status_code=404, detail="Learning module not found")
-    
+
     if title is not None:
         module.title = title
     if content is not None:
         module.content = content
     if position is not None:
         module.position = position
-    
+
     db.commit()
     db.refresh(module)
     return module
@@ -113,10 +114,10 @@ def delete_learning_module(
         LearningModule.id == module_id,
         Textbook.owner_id == current_user.id
     ).first()
-    
+
     if not module:
         raise HTTPException(status_code=404, detail="Learning module not found")
-    
+
     db.delete(module)
     db.commit()
     return {"message": "Learning module deleted successfully"}

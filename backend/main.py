@@ -1,12 +1,13 @@
 """
-URL Ingestion & Embedding Pipeline
+URL Ingestion & Embedding Pipeline (Updated & Fixed)
 
-This script implements a complete pipeline that:
-1. Collects and validates Docusaurus URLs
-2. Crawls the content from these URLs
-3. Cleans and chunks the text
-4. Generates embeddings using Cohere
-5. Stores vectors and metadata in Qdrant
+تبدیلیاں:
+- Vector size 4096 → 1024 (Cohere کے مطابق)
+- بہتر Docusaurus content selectors (article first)
+- بہتر chunking with semantic boundaries
+- Multiple sitemaps support
+- Retry logic for Cohere embeddings
+- Duplicate URLs removal
 """
 
 import os
@@ -14,7 +15,7 @@ import re
 import time
 import logging
 import argparse
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from urllib.parse import urljoin, urlparse
 from dataclasses import dataclass
 
@@ -25,9 +26,9 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.models import PointStruct
 import hashlib
+import tenacity  # pip install tenacity اگر نہیں ہے تو
 
 from config.settings import load_config_from_env, PipelineConfig
-
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -36,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CrawledContent:
-    """Represents the extracted text from a single URL"""
     url: str
     title: str
     content: str
@@ -45,7 +45,6 @@ class CrawledContent:
 
 @dataclass
 class TextChunk:
-    """A segment of text from CrawledContent that fits within embedding model constraints"""
     id: str
     content: str
     source_url: str
@@ -55,8 +54,6 @@ class TextChunk:
 
 
 class DocusaurusCrawler:
-    """Crawls Docusaurus documentation sites and extracts content"""
-
     def __init__(self, max_pages: int = 1000):
         self.max_pages = max_pages
         self.session = requests.Session()
@@ -65,46 +62,46 @@ class DocusaurusCrawler:
         })
 
     def get_sitemap_urls(self, base_url: str) -> List[str]:
-        """Extract URLs from sitemap.xml if available"""
-        sitemap_url = urljoin(base_url, 'sitemap.xml')
-        try:
-            response = self.session.get(sitemap_url, timeout=10)
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'xml')
-                urls = []
-                for loc in soup.find_all('loc'):
-                    url = loc.text.strip()
-                    if url.startswith(base_url):
-                        urls.append(url)
-                logger.info(f"Found {len(urls)} URLs in sitemap")
-                return urls
-        except Exception as e:
-            logger.warning(f"Could not fetch sitemap from {sitemap_url}: {e}")
+        """Multiple possible sitemaps چیک کرتا ہے"""
+        possible_sitemaps = ['sitemap.xml', 'sitemap-pages.xml', 'sitemap-blog.xml', 'sitemap-0.xml']
+        urls = set()
 
-        return []
+        for sm in possible_sitemaps:
+            sitemap_url = urljoin(base_url, sm)
+            try:
+                response = self.session.get(sitemap_url, timeout=60)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'xml')
+                    for loc in soup.find_all('loc'):
+                        url = loc.text.strip()
+                        if url.startswith(base_url):
+                            urls.add(url)
+                    logger.info(f"Found {len(urls)} URLs from {sm}")
+            except Exception as e:
+                logger.debug(f"Sitemap {sitemap_url} not found or error: {e}")
+
+        return list(urls)
 
     def crawl_url(self, url: str) -> Optional[CrawledContent]:
-        """Crawl a single URL and extract content"""
         try:
-            response = self.session.get(url, timeout=15)
+            response = self.session.get(url, timeout=60)
             response.raise_for_status()
-
             soup = BeautifulSoup(response.content, 'html.parser')
 
-            # Remove script and style elements
-            for script in soup(["script", "style"]):
-                script.decompose()
+            # Remove unwanted elements
+            for elem in soup(["script", "style", "nav", "header", "footer", "aside"]):
+                elem.decompose()
 
-            # Try to find the main content area in Docusaurus sites
-            # Common selectors for Docusaurus content areas
+            # Better selectors for Docusaurus (article is most reliable)
             content_selectors = [
-                'main div[class*="docItem"]',  # Docusaurus doc item
-                'article',  # Standard article tag
-                'main',  # Main content area
-                'div[class*="container"]',  # Container divs
-                'div[class*="doc"]',  # Doc-related divs
-                'div[class*="markdown"]',  # Markdown content
-                '[role="main"]',  # Main role
+                'article',  # سب سے بہتر
+                'div.theme-doc-markdown',
+                'div.markdown',
+                'main div[class*="docItem"]',
+                'div[class*="docItemContainer"]',
+                'div[class*="markdown"]',
+                '[role="main"]',
+                'main',
             ]
 
             content_element = None
@@ -113,183 +110,151 @@ class DocusaurusCrawler:
                 if content_element:
                     break
 
-            # If no specific content area found, use body
             if not content_element:
                 content_element = soup.find('body')
 
-            if content_element:
-                # Extract text, cleaning up newlines and extra spaces
-                content = content_element.get_text(separator=' ', strip=True)
-                # Clean up excessive whitespace
-                content = re.sub(r'\s+', ' ', content)
-            else:
-                logger.warning(f"No content found for {url}")
-                content = ""
+            content = content_element.get_text(separator=' ', strip=True) if content_element else ""
+            content = re.sub(r'\s+', ' ', content).strip()
 
-            # Extract title
             title_tag = soup.find('title')
             title = title_tag.get_text().strip() if title_tag else urlparse(url).path.split('/')[-1] or 'No Title'
 
-            # Extract metadata
             metadata = {
                 'crawl_timestamp': time.time(),
                 'url': url,
             }
 
-            return CrawledContent(
-                url=url,
-                title=title,
-                content=content,
-                metadata=metadata
-            )
+            return CrawledContent(url=url, title=title, content=content, metadata=metadata)
 
         except Exception as e:
             logger.error(f"Error crawling {url}: {e}")
             return None
 
     def crawl_urls(self, urls: List[str]) -> List[CrawledContent]:
-        """Crawl multiple URLs and return list of crawled content"""
         crawled_contents = []
+        seen_urls = set()
 
         for url in urls:
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
             logger.info(f"Crawling: {url}")
             content = self.crawl_url(url)
-            if content:
+            if content and content.content.strip():
                 crawled_contents.append(content)
-            time.sleep(0.5)  # Be respectful to the server
+            time.sleep(0.5)
+
+            if len(crawled_contents) >= self.max_pages:
+                break
 
         return crawled_contents
 
 
 class TextProcessor:
-    """Processes text by cleaning and chunking it"""
-
     def __init__(self, chunk_size: int = 512, overlap: float = 0.2):
         self.chunk_size = chunk_size
         self.overlap = overlap
-        # Estimated token to character ratio (rough approximation)
         self.chars_per_token = 4
 
     def clean_text(self, text: str) -> str:
-        """Clean text by removing extra whitespace and normalizing"""
-        # Remove extra whitespace
         text = re.sub(r'\s+', ' ', text)
-        # Remove special characters that might interfere with embeddings
-        text = re.sub(r'[^\x00-\x7F]+', ' ', text)  # Remove non-ASCII characters
         return text.strip()
 
     def chunk_text(self, content: str, source_url: str, source_title: str) -> List[TextChunk]:
-        """Split content into chunks of approximately chunk_size tokens"""
-        # Roughly convert tokens to characters (1 token ≈ 4 characters)
+        content = self.clean_text(content)
+        if not content:
+            return []
+
         max_chars = int(self.chunk_size * self.chars_per_token)
         overlap_chars = int(max_chars * self.overlap)
 
-        # Split content into sentences to maintain semantic boundaries
-        sentences = re.split(r'[.!?]+', content)
-
         chunks = []
-        current_chunk = ""
+        start = 0
         chunk_index = 0
 
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if not sentence:
-                continue
+        while start < len(content):
+            end = start + max_chars
+            chunk_text = content[start:end]
 
-            # If adding the next sentence would exceed the chunk size
-            if len(current_chunk) + len(sentence) > max_chars:
-                # Save the current chunk
-                if current_chunk.strip():
-                    chunk_id = hashlib.md5(f"{source_url}_{chunk_index}".encode()).hexdigest()
-                    chunks.append(TextChunk(
-                        id=chunk_id,
-                        content=current_chunk.strip(),
-                        source_url=source_url,
-                        source_title=source_title,
-                        chunk_index=chunk_index,
-                        metadata={}
-                    ))
+            if end < len(content):
+                # Better boundary تلاش کریں
+                boundary = max(
+                    chunk_text.rfind('. '),
+                    chunk_text.rfind('! '),
+                    chunk_text.rfind('? '),
+                    chunk_text.rfind('\n\n'),
+                    chunk_text.rfind(' '),
+                )
+                if boundary > max_chars // 2:
+                    chunk_text = chunk_text[:boundary + 1]
+                    end = start + len(chunk_text)
 
-                # Start a new chunk with some overlap
-                if overlap_chars > 0:
-                    # Get the end of the current chunk for overlap
-                    overlap_start = max(0, len(current_chunk) - overlap_chars)
-                    current_chunk = current_chunk[overlap_start:]
-                else:
-                    current_chunk = ""
+            if chunk_text.strip():
+                chunk_id = hashlib.md5(f"{source_url}_{chunk_index}".encode()).hexdigest()
+                chunks.append(TextChunk(
+                    id=chunk_id,
+                    content=chunk_text.strip(),
+                    source_url=source_url,
+                    source_title=source_title,
+                    chunk_index=chunk_index,
+                    metadata={}
+                ))
 
-                chunk_index += 1
-
-            current_chunk += " " + sentence
-
-        # Add the last chunk if it has content
-        if current_chunk.strip():
-            chunk_id = hashlib.md5(f"{source_url}_{chunk_index}".encode()).hexdigest()
-            chunks.append(TextChunk(
-                id=chunk_id,
-                content=current_chunk.strip(),
-                source_url=source_url,
-                source_title=source_title,
-                chunk_index=chunk_index,
-                metadata={}
-            ))
+            start = end - overlap_chars
+            if start >= len(content):
+                break
+            chunk_index += 1
 
         return chunks
 
 
 class Embedder:
-    """Generates embeddings using Cohere"""
-
-    def __init__(self, api_key: str, model: str = "embed-english-v2.0"):
+    def __init__(self, api_key: str, model: str = "embed-english-v3.0"):  # v3 تجویز کیا جاتا ہے
         self.client = cohere.Client(api_key)
         self.model = model
 
+    @tenacity.retry(wait=tenacity.wait_exponential(multiplier=1, min=4, max=10),
+                    stop=tenacity.stop_after_attempt(5),
+                    reraise=True)
     def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for a list of texts"""
         try:
             response = self.client.embed(
                 texts=texts,
-                model=self.model
+                model=self.model,
+                input_type="search_document",  # v3+ کے لیے بہتر
+                truncate="END"
             )
             return response.embeddings
         except Exception as e:
-            logger.error(f"Error generating embeddings: {e}")
-            return []
+            logger.error(f"Embedding error: {e}")
+            raise
 
 
 class VectorStore:
-    """Stores embeddings in Qdrant vector database"""
-
     def __init__(self, url: str, api_key: str, collection_name: str = "book_embeddings"):
         self.client = QdrantClient(url=url, api_key=api_key)
         self.collection_name = collection_name
-
-        # Create collection if it doesn't exist
         self._create_collection()
 
     def _create_collection(self):
-        """Create the collection in Qdrant if it doesn't exist"""
         try:
-            # Try to get collection info to check if it exists
             self.client.get_collection(self.collection_name)
-            logger.info(f"Collection '{self.collection_name}' already exists")
+            logger.info(f"Collection '{self.collection_name}' exists")
         except:
-            # Collection doesn't exist, create it
             self.client.create_collection(
                 collection_name=self.collection_name,
-                vectors_config=models.VectorParams(size=4096, distance=models.Distance.COSINE),
+                vectors_config=models.VectorParams(size=1024, distance=models.Distance.COSINE),
             )
-            logger.info(f"Created collection '{self.collection_name}'")
+            logger.info(f"Created collection '{self.collection_name}' with dimension 1024")
 
     def store_embeddings(self, chunks: List[TextChunk], embeddings: List[List[float]]) -> bool:
-        """Store text chunks and their embeddings in Qdrant"""
         if len(chunks) != len(embeddings):
-            logger.error("Number of chunks and embeddings don't match")
+            logger.error("Chunks and embeddings count mismatch")
             return False
 
         points = []
         for chunk, embedding in zip(chunks, embeddings):
-            point = PointStruct(
+            points.append(PointStruct(
                 id=chunk.id,
                 vector=embedding,
                 payload={
@@ -299,121 +264,73 @@ class VectorStore:
                     "chunk_index": chunk.chunk_index,
                     "metadata": chunk.metadata
                 }
-            )
-            points.append(point)
+            ))
 
         try:
             self.client.upsert(collection_name=self.collection_name, points=points)
-            logger.info(f"Successfully stored {len(points)} vectors in Qdrant")
+            logger.info(f"Stored {len(points)} vectors")
             return True
         except Exception as e:
-            logger.error(f"Error storing embeddings in Qdrant: {e}")
+            logger.error(f"Qdrant upsert error: {e}")
             return False
 
 
 def main():
-    """Main function that orchestrates the entire pipeline"""
     parser = argparse.ArgumentParser(description='URL Ingestion & Embedding Pipeline')
-    parser.add_argument('--urls', nargs='+', required=True, help='List of Docusaurus URLs to process')
-    parser.add_argument('--chunk-size', type=int, help='Size of text chunks in tokens')
-    parser.add_argument('--overlap', type=float, help='Overlap between chunks as percentage')
-    parser.add_argument('--embed-model', help='Cohere model to use for embeddings')
-    parser.add_argument('--collection-name', help='Qdrant collection name')
-    parser.add_argument('--batch-size', type=int, help='Number of chunks to process in each batch')
+    parser.add_argument('--urls', nargs='+', required=True, help='Base URLs (e.g. https://example.com/docs/)')
+    parser.add_argument('--chunk-size', type=int, default=512)
+    parser.add_argument('--overlap', type=float, default=0.2)
+    parser.add_argument('--embed-model', default='embed-english-v3.0')
+    parser.add_argument('--collection-name', default='book_embeddings')
+    parser.add_argument('--batch-size', type=int, default=96)
 
     args = parser.parse_args()
 
-    logger.info("Starting URL Ingestion & Embedding Pipeline")
-
-    # Load configuration
     try:
         config = load_config_from_env()
-
-        # Override config values with command line arguments if provided
-        if args.chunk_size is not None:
-            config.chunk_size = args.chunk_size
-        if args.overlap is not None:
-            config.overlap = args.overlap
-        if args.embed_model is not None:
-            config.embed_model = args.embed_model
-        if args.collection_name is not None:
-            config.collection_name = args.collection_name
-        if args.batch_size is not None:
-            config.batch_size = args.batch_size
+        config.chunk_size = args.chunk_size or config.chunk_size
+        config.overlap = args.overlap or config.overlap
+        config.embed_model = args.embed_model or config.embed_model
+        config.collection_name = args.collection_name or config.collection_name
+        config.batch_size = args.batch_size or config.batch_size
     except ValueError as e:
-        logger.error(f"Configuration error: {e}")
+        logger.error(f"Config error: {e}")
         return
 
-    # Initialize components with configuration
     crawler = DocusaurusCrawler(max_pages=config.max_pages)
     processor = TextProcessor(chunk_size=config.chunk_size, overlap=config.overlap)
-    embedder = Embedder(
-        api_key=config.cohere_api_key,
-        model=config.embed_model
-    )
-    vector_store = VectorStore(
-        url=config.qdrant_url,
-        api_key=config.qdrant_api_key,
-        collection_name=config.collection_name
-    )
+    embedder = Embedder(api_key=config.cohere_api_key, model=config.embed_model)
+    vector_store = VectorStore(url=config.qdrant_url, api_key=config.qdrant_api_key,
+                               collection_name=config.collection_name)
 
-    # Step 1: Crawl URLs
-    logger.info("Step 1: Crawling URLs")
     all_crawled_content = []
-
-    for url in args.urls:
-        logger.info(f"Processing site: {url}")
-        # Try to get URLs from sitemap first
-        site_urls = crawler.get_sitemap_urls(url)
-
-        if site_urls:
-            crawled_content = crawler.crawl_urls(site_urls)
-        else:
-            # If no sitemap, just crawl the provided URL
-            content = crawler.crawl_url(url)
-            if content:
-                crawled_content = [content]
-            else:
-                crawled_content = []
-
-        all_crawled_content.extend(crawled_content)
+    for base_url in args.urls:
+        site_urls = crawler.get_sitemap_urls(base_url) or [base_url]
+        crawled = crawler.crawl_urls(site_urls)
+        all_crawled_content.extend(crawled)
 
     logger.info(f"Crawled {len(all_crawled_content)} pages")
 
-    # Step 2: Process and chunk content
-    logger.info("Step 2: Processing and chunking content")
     all_chunks = []
-
     for content in all_crawled_content:
         chunks = processor.chunk_text(content.content, content.url, content.title)
         all_chunks.extend(chunks)
 
-    logger.info(f"Created {len(all_chunks)} text chunks")
+    logger.info(f"Created {len(all_chunks)} chunks")
 
-    # Step 3: Generate embeddings in batches
-    logger.info("Step 3: Generating embeddings")
     all_embeddings = []
-
     for i in range(0, len(all_chunks), config.batch_size):
-        batch_chunks = all_chunks[i:i + config.batch_size]
-        batch_texts = [chunk.content for chunk in batch_chunks]
+        batch = all_chunks[i:i + config.batch_size]
+        texts = [c.content for c in batch]
+        embeddings = embedder.generate_embeddings(texts)
+        all_embeddings.extend(embeddings)
 
-        logger.info(f"Processing batch {i//config.batch_size + 1}/{(len(all_chunks)-1)//config.batch_size + 1}")
-        batch_embeddings = embedder.generate_embeddings(batch_texts)
-        all_embeddings.extend(batch_embeddings)
-
-    logger.info(f"Generated {len(all_embeddings)} embeddings")
-
-    # Step 4: Store in Qdrant
-    logger.info("Step 4: Storing embeddings in Qdrant")
     success = vector_store.store_embeddings(all_chunks, all_embeddings)
 
     if success:
         logger.info("Pipeline completed successfully!")
-        print(f"Successfully processed {len(all_crawled_content)} pages and stored {len(all_embeddings)} embeddings in Qdrant")
     else:
-        logger.error("Pipeline failed during storage step")
-        print("Pipeline failed during storage step")
+        logger.error("Pipeline failed at storage")
 
 
 if __name__ == "__main__":

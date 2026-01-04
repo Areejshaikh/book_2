@@ -1,70 +1,65 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
-from .database import Base
+from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional, TYPE_CHECKING
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from .user import User  # Assuming there's a user model
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    username = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    textbooks = relationship("Textbook", back_populates="owner")
-    learning_modules = relationship("LearningModule", back_populates="author")
+class TextbookBase(SQLModel):
+    title: str = Field(index=True, nullable=False)
+    description: Optional[str] = Field(default=None)
+    content: Optional[str] = Field(default=None)  # Entire textbook content
+    is_published: bool = Field(default=False)
 
 
-class Textbook(Base):
+class Textbook(TextbookBase, table=True):
     __tablename__ = "textbooks"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True, nullable=False)
-    description = Column(Text)
-    content = Column(Text)  # Entire textbook content
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_published = Column(Boolean, default=False)
-    
-    # Relationships
-    owner = relationship("User", back_populates="textbooks")
-    modules = relationship("LearningModule", back_populates="textbook")
+    id: int = Field(primary_key=True, index=True)
+    owner_id: int = Field(foreign_key="users.id", nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships - these would be defined in the User model as back_populates
+    # owner: "User" = Relationship(back_populates="textbooks")
+    # modules: List["LearningModule"] = Relationship(back_populates="textbook")
 
 
-class LearningModule(Base):
+class TextbookResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    owner_id: int
+    is_published: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class LearningModule(SQLModel, table=True):
     __tablename__ = "learning_modules"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True, nullable=False)
-    content = Column(Text)  # Detailed content of the learning module
-    textbook_id = Column(Integer, ForeignKey("textbooks.id"), nullable=False)
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    position = Column(Integer, default=0)  # Order of the module in the textbook
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    textbook = relationship("Textbook", back_populates="modules")
-    author = relationship("User", back_populates="learning_modules")
+    id: int = Field(primary_key=True, index=True)
+    title: str = Field(index=True, nullable=False)
+    content: Optional[str] = Field(default=None)  # Detailed content of the learning module
+    textbook_id: int = Field(foreign_key="textbooks.id", nullable=False)
+    author_id: int = Field(foreign_key="users.id", nullable=False)
+    position: int = Field(default=0)  # Order of the module in the textbook
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class Context7Session(Base):
+class Context7Session(SQLModel, table=True):
     __tablename__ = "context7_sessions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(String, unique=True, nullable=False)  # Session ID from Context7
-    user_id = Column(Integer, ForeignKey("users.id"))
-    textbook_id = Column(Integer, ForeignKey("textbooks.id"))
-    context_data = Column(Text)  # JSON or serialized context data
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    user = relationship("User")
-    textbook = relationship("Textbook")
+    id: int = Field(primary_key=True, index=True)
+    session_id: str = Field(unique=True, nullable=False)  # Session ID from Context7
+    user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    textbook_id: Optional[int] = Field(default=None, foreign_key="textbooks.id")
+    context_data: Optional[str] = Field(default=None)  # JSON or serialized context data
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

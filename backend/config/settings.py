@@ -18,7 +18,7 @@ class PipelineConfig:
 
     # Fields with defaults
     embed_model: str = "embed-english-v2.0"
-    collection_name: str = "book_embeddings"
+    collection_name: str = "deploy_book_embeddings"
 
     # Processing settings
     chunk_size: int = 512
@@ -27,7 +27,7 @@ class PipelineConfig:
     max_pages: int = 1000
 
     # Network settings
-    request_timeout: int = 15
+    request_timeout: int = 60
     rate_limit_delay: float = 0.5
 def load_config_from_env() -> PipelineConfig:
     """Load configuration from environment variables"""
@@ -55,7 +55,7 @@ def load_config_from_env() -> PipelineConfig:
     batch_size = int(os.getenv("BATCH_SIZE", "10"))
     max_pages = int(os.getenv("MAX_PAGES", "1000"))
 
-    request_timeout = int(os.getenv("REQUEST_TIMEOUT", "15"))
+    request_timeout = int(os.getenv("REQUEST_TIMEOUT", "60"))
     rate_limit_delay = float(os.getenv("RATE_LIMIT_DELAY", "0.5"))
 
     return PipelineConfig(

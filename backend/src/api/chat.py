@@ -10,7 +10,7 @@ from ..models.chat_response import ConfidenceLevel
 from ..middleware.rate_limit import check_rate_limit
 
 
-router = APIRouter(prefix="/chat")
+router = APIRouter()
 
 # Request models
 class ChatRequest(BaseModel):
@@ -37,7 +37,7 @@ class ChatHistoryResponse(BaseModel):
 rag_service = RAGService()
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/", response_model=ChatResponse)
 async def process_chat_request(request: ChatRequest, req: Request):
     """
     Process a user query and return a response based on book content.
@@ -109,7 +109,7 @@ async def process_chat_request(request: ChatRequest, req: Request):
         )
 
 
-@router.get("/chat/{session_id}", response_model=ChatHistoryResponse)
+@router.get("/{session_id}", response_model=ChatHistoryResponse)
 async def get_chat_history(session_id: str, req: Request):
     """
     Retrieve the chat history for a specific session.
@@ -125,7 +125,7 @@ async def get_chat_history(session_id: str, req: Request):
     )
 
 
-@router.post("/chat/{session_id}/feedback")
+@router.post("/{session_id}/feedback")
 async def submit_feedback(session_id: str, req: Request, message_id: str, feedback_type: str, comment: Optional[str] = None):
     """
     Submit feedback on a specific chat response.

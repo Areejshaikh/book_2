@@ -1,6 +1,20 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Get the base URL from environment or default
+const getAPIBaseUrl = () => {
+  // Check if we're in a browser environment and the variable is set via client module
+  if (typeof window !== 'undefined' && window.NEXT_PUBLIC_API_URL) {
+    return window.NEXT_PUBLIC_API_URL;
+  }
+  // Check for environment variable in different possible locations
+  if (typeof window !== 'undefined' && window.ENV?.NEXT_PUBLIC_API_URL) {
+    return window.ENV.NEXT_PUBLIC_API_URL;
+  }
+  // Default fallback
+  return 'http://localhost:8000/api/v1';
+};
+
+const API_BASE_URL = getAPIBaseUrl();
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

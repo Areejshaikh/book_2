@@ -1,6 +1,6 @@
 import { authService } from '../services/authService';
 
-// Function to get the base URL safely
+// ✅ Correct backend base URL for browser environment
 const getBaseURL = () => {
   // Check if we're in a browser environment and the variable is set via client module
   if (typeof window !== 'undefined' && window.REACT_APP_API_BASE_URL) {
@@ -16,98 +16,94 @@ const getBaseURL = () => {
 
 export const chatAPI = {
   /**
-   * Sends a message to the chat backend
-   * @param {string} query - The user's query
-   * @param {string} backendUrlOverride - Optional backend URL override
-   * @returns {Promise<Object>} The response from the backend
+   * Send message to chat backend
    */
-  sendMessage: async (query, backendUrlOverride = null) => {
+  sendMessage: async (
+    query,
+    bookId = 'default-book',
+    sessionId = null,
+    backendUrlOverride = null
+  ) => {
     const backendUrl = backendUrlOverride || getBaseURL();
 
-    // Validate query length
+    // Generate session ID if not provided
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+    }
+
     if (!query || query.trim().length === 0) {
       throw new Error('Query cannot be empty');
     }
 
     if (query.length > 1000) {
-      throw new Error('Query is too long. Please limit to 1000 characters.');
+      throw new Error('Query is too long (max 1000 characters)');
     }
 
     try {
-      // Note: Using the correct backend endpoint for chat based on backend structure
-      const response = await fetch(`${backendUrl}/api/v1/chat/`, {
+      const response = await fetch(`${backendUrl}/api/v1/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           query: query.trim(),
+          book_id: bookId,
+          session_id: sessionId,
         }),
-        // Include credentials to send session cookies if needed
-        credentials: 'include'
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.detail || errorData.error || `HTTP error! Status: ${response.status}`;
-
-        // Make sure error messages are in English for consistent UI display
-        const isString = typeof errorMessage === 'string';
-        const standardizedErrorMessage = !isString || !errorMessage.match(/[a-zA-Z]/) ?
-          'An error occurred processing your request' :
-          errorMessage;
-
-        throw new Error(standardizedErrorMessage);
+        throw new Error(
+          errorData.detail ||
+            errorData.error ||
+            `HTTP Error ${response.status}`
+        );
       }
 
       return await response.json();
     } catch (error) {
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error('Network error - unable to connect to the chat service');
+      if (error.name === 'TypeError') {
+        throw new Error('Network error: Backend not reachable');
       }
-
-      // Ensure any non-English error messages are handled correctly
-      const isErrorMessageString = typeof error.message === 'string';
-      const message = error.message && isErrorMessageString && !error.message.match(/[a-zA-Z]/) ?
-        'An error occurred connecting to the chat service' :
-        error.message || 'An error occurred connecting to the chat service';
-
-      throw new Error(message);
+      throw error;
     }
   },
 
   /**
-   * Gets the history of a conversation
-   * @param {string} userId - The user ID (UUID format)
-   * @param {string} backendUrlOverride - Optional backend URL override
-   * @returns {Promise<Object>} The conversation history
+   * Get conversation history
    */
   getConversationHistory: async (userId, backendUrlOverride = null) => {
     const backendUrl = backendUrlOverride || getBaseURL();
 
     if (!userId) {
-      throw new Error('User ID is required to get conversation history');
+      throw new Error('User ID is required');
     }
 
     try {
-      const response = await fetch(`${backendUrl}/api/v1/chat/history/${userId}`, {
+      const response = await fetch(`${backendUrl}/api/v1/chat`, {
         method: 'GET',
-        // Include credentials to send session cookies if needed
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.detail || errorData.error || `HTTP error! Status: ${response.status}`;
-        throw new Error(errorMessage);
+        throw new Error(
+          errorData.detail ||
+            errorData.error ||
+            `HTTP Error ${response.status}`
+        );
       }
 
       return await response.json();
     } catch (error) {
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error('Network error - unable to connect to the chat service');
+      if (error.name === 'TypeError') {
+        throw new Error('Network error: Backend not reachable');
       }
       throw error;
     }
-  }
+  },
 };

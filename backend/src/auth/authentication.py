@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from src.models.textbook_models import User
+from src.database.models import User
 from src.db_init import engine
 from sqlalchemy.orm import sessionmaker
 
@@ -86,7 +86,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
-    
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -108,7 +108,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -117,7 +117,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    
+
     # Create a new database session to fetch the user
     db = SessionLocal()
     try:

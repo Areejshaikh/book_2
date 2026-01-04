@@ -5,17 +5,22 @@ import numpy as np
 
 class EmbeddingService:
     def __init__(self):
-        # Initialize the Google Gemini API key from environment
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY environment variable is required")
-
-        genai.configure(api_key=api_key)
+        self._api_key = os.getenv("GEMINI_API_KEY")
+        if not self._api_key:
+            print("WARNING: GEMINI_API_KEY environment variable is not set. Embedding service will use fallback behavior.")
+            self._configured = False
+        else:
+            genai.configure(api_key=self._api_key)
+            self._configured = True
         # Use the embedding model from Google Gemini
         self.model_name = "models/embedding-001"
 
     def generate_embedding(self, text: str) -> List[float]:
         """Generate embedding for a single text using Google Gemini"""
+        if not self._configured:
+            # Return a zero vector as fallback when API key is not available
+            return [0.0] * 768
+
         try:
             result = genai.embed_content(
                 model=self.model_name,

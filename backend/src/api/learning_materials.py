@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from src.services.learning_materials_service import LearningMaterialsService
-from src.models.learning_materials import LearningMaterials
+from src.models.learning_materials import LearningMaterialsResponse
 import logging
 
 
@@ -9,7 +9,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{chapter_id}", response_model=List[LearningMaterials])
+@router.get("/{chapter_id}", response_model=List[LearningMaterialsResponse])
 def get_learning_materials_by_chapter(
     chapter_id: int,
     material_type: str = None,
@@ -19,7 +19,7 @@ def get_learning_materials_by_chapter(
         materials = learning_materials_service.get_learning_materials_by_chapter(chapter_id, material_type)
         if not materials:
             raise HTTPException(status_code=404, detail="No learning materials found for this chapter")
-        
+
         return materials
     except HTTPException:
         # Re-raise HTTP exceptions

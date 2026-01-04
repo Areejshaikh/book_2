@@ -1,6 +1,11 @@
 from typing import List
-from src.database import SessionLocal
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from src.database.session import engine
 from src.models.user_progress import UserProgress
+
+# Create SessionLocal using the engine from database.session
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class ProgressService:
@@ -22,7 +27,7 @@ class ProgressService:
                 UserProgress.user_id == user_id,
                 UserProgress.chapter_id == chapter_id
             ).first()
-            
+
             if progress_record:
                 progress_record.progress = progress
             else:
@@ -32,7 +37,7 @@ class ProgressService:
                     progress=progress
                 )
                 self.db.add(progress_record)
-            
+
             self.db.commit()
             self.db.refresh(progress_record)
             return progress_record

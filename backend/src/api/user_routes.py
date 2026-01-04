@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from src.auth.authentication import get_current_active_user, get_db
-from src.models.textbook_models import User
+from src.database.models import User  # Use User from database models
 from src.auth.authentication import get_current_user
 
 router = APIRouter()
@@ -32,10 +32,10 @@ def update_current_user_profile(
         current_user.username = username
     if email is not None:
         current_user.email = email
-    
+
     db.commit()
     db.refresh(current_user)
-    
+
     return {
         "id": current_user.id,
         "username": current_user.username,
@@ -54,11 +54,11 @@ def get_user(
     # For now, only allow users to get their own information
     if current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to access this user")
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return {
         "id": user.id,
         "username": user.username,

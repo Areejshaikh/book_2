@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from src.auth.authentication import get_current_active_user, get_db
-from src.models.textbook_models import User, Textbook
+from src.database.models import User  # Use User from database models
+from src.models.textbook_models import Textbook
 from src.models.textbook_models import LearningModule
 from src.auth.authentication import get_current_user
 
@@ -67,14 +68,14 @@ def update_textbook(
     textbook = db.query(Textbook).filter(Textbook.id == textbook_id, Textbook.owner_id == current_user.id).first()
     if not textbook:
         raise HTTPException(status_code=404, detail="Textbook not found")
-    
+
     if title is not None:
         textbook.title = title
     if description is not None:
         textbook.description = description
     if content is not None:
         textbook.content = content
-    
+
     db.commit()
     db.refresh(textbook)
     return textbook
@@ -90,7 +91,7 @@ def delete_textbook(
     textbook = db.query(Textbook).filter(Textbook.id == textbook_id, Textbook.owner_id == current_user.id).first()
     if not textbook:
         raise HTTPException(status_code=404, detail="Textbook not found")
-    
+
     db.delete(textbook)
     db.commit()
     return {"message": "Textbook deleted successfully"}

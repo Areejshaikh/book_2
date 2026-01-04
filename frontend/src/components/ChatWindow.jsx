@@ -67,7 +67,7 @@ const ChatWindow = ({ onClose, backendUrl }) => {
 
     try {
       // Call the chat API - update to match new interface
-      const response = await chatAPI.sendMessage(inputValue, backendUrl);
+      const response = await chatAPI.sendMessage(inputValue, "default-book", `session_${Date.now()}`, backendUrl);
 
       // Add AI response to the chat - update to handle response structure
       const aiMessage = {

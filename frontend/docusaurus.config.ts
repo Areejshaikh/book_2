@@ -13,7 +13,7 @@ const config: Config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://book-alpha-three.vercel.app/',  // Vercel deployment URL (no sub-path)
+  url: 'https://book-2-bay.vercel.app/',  // Vercel deployment URL (no sub-path)
   // Set the /<baseUrl>/ pathname under which your site is served
   baseUrl: '/',  // Root base URL for Vercel deployment
   // GitHub pages deployment config

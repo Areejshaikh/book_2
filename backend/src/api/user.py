@@ -1,6 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from src.database import SessionLocal
-from src.models.user import UserProfile
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from src.database.session import engine
+from src.models.user_profile import UserProfile
+
+# Create SessionLocal using the engine from database.session
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 router = APIRouter()
@@ -12,7 +17,7 @@ def update_user_profile(user_id: int, profile_data: dict):
     try:
         # Check if profile exists
         profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
-        
+
         if profile:
             # Update existing profile
             for field, value in profile_data.items():
@@ -22,10 +27,10 @@ def update_user_profile(user_id: int, profile_data: dict):
             # Create new profile
             profile = UserProfile(user_id=user_id, **{k: v for k, v in profile_data.items() if hasattr(UserProfile, k)})
             db.add(profile)
-        
+
         db.commit()
         db.refresh(profile)
-        
+
         return {"message": "User profile updated successfully", "profile_id": profile.id}
     except Exception as e:
         db.rollback()

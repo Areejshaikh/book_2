@@ -18,10 +18,10 @@ class Config:
     QDRANT_URL: str = os.getenv("QDRANT_URL", "")
 
     # Source URLs configuration
-    SOURCE_URLS: List[str] = os.getenv("SOURCE_URLS", "https://areejshaikh.github.io/book/").split(",")
+    SOURCE_URLS: List[str] = os.getenv("SOURCE_URLS", "https://book-2-bay.vercel.app/").split(",")
 
     # Collection name
-    COLLECTION_NAME: str = "rag_embeddings"
+    COLLECTION_NAME: str = os.getenv("QDRANT_COLLECTION_NAME", "textbook_vectors")
 
     @classmethod
     def validate(cls) -> List[str]:

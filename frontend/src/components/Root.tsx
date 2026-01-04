@@ -5,9 +5,15 @@ import ChatbotButton from './ChatbotButton';
 // Root component that wraps the entire app
 const Root = ({ children }) => {
   // Get backend URL from environment or default
-  const backendUrl = typeof window !== 'undefined'
-    ? (window as any).BACKEND_URL || process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'
-    : 'http://localhost:8000';
+  let backendUrl = 'http://localhost:8000';
+
+  if (typeof window !== 'undefined') {
+    // Check for environment variable in different possible locations in the browser
+    backendUrl = (window as any).BACKEND_URL ||
+                 (window as any).REACT_APP_API_BASE_URL ||
+                 (window as any).ENV?.REACT_APP_API_BASE_URL ||
+                 'http://localhost:8000';
+  }
 
   return (
     <AuthProvider>

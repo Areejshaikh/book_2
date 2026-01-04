@@ -10,14 +10,14 @@ const getBaseURL = () => {
     return window.ENV.REACT_APP_API_BASE_URL;
   }
 
-  // Check for environment variable in process (for React apps)
-  if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_BASE_URL) {
-    return process.env.REACT_APP_API_BASE_URL;
-  }
-
   // Check for window variable (set by Docusaurus)
   if (typeof window !== 'undefined' && window.REACT_APP_API_BASE_URL) {
     return window.REACT_APP_API_BASE_URL;
+  }
+
+  // Check for environment variable in process (for React apps)
+  if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_BASE_URL) {
+    return process.env.REACT_APP_API_BASE_URL;
   }
 
   // Default fallback

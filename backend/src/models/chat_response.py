@@ -51,16 +51,11 @@ class ChatMessage(BaseModel):
 
 
 class RetrievedContext(BaseModel):
-    """
-    Represents a chunk of book content retrieved for answering a query
-    """
     context_id: str
-    book_id: str
     chunk_text: str
-    chunk_metadata: Optional[dict] = None  # Additional metadata about the chunk (page number, chapter, etc.)
-    similarity_score: float  # Similarity score from vector search (0.0 to 1.0)
-    embedding_id: str  # Reference to the vector embedding in Qdrant
-
+    similarity_score: float
+    book_id: str  # Iska hona zaroori hai
+    embedding_id: str # Iska hona bhi zaroori hai
 
 class BookContent(BaseModel):
     """

@@ -1,8 +1,13 @@
 import json
 from typing import List, Optional
-from src.database import SessionLocal
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from src.database.session import engine
 from src.models.learning_materials import LearningMaterials
 from src.models.chapter import TextbookChapter as Chapter
+
+# Create SessionLocal using the engine from database.session
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class LearningMaterialsService:
@@ -15,10 +20,10 @@ class LearningMaterialsService:
         """
         try:
             query = self.db.query(LearningMaterials).filter(LearningMaterials.chapter_id == chapter_id)
-            
+
             if material_type:
                 query = query.filter(LearningMaterials.material_type == material_type)
-            
+
             return query.all()
         finally:
             self.db.close()
@@ -68,11 +73,11 @@ class LearningMaterialsService:
                 content=content,
                 metadata=json.dumps(metadata) if metadata else None
             )
-            
+
             self.db.add(material)
             self.db.commit()
             self.db.refresh(material)
-            
+
             return material
         finally:
             self.db.close()
@@ -86,12 +91,12 @@ class LearningMaterialsService:
             chapter = self.db.query(Chapter).filter(Chapter.id == chapter_id).first()
             if not chapter:
                 return {}
-            
+
             # Generate all materials
             summary_content = self.generate_summary(chapter)
             quiz_data = self.generate_quiz(chapter)
             booster_content = self.generate_learning_booster(chapter)
-            
+
             # Store in database
             summary = self.create_learning_material(
                 chapter_id=chapter_id,
@@ -99,7 +104,7 @@ class LearningMaterialsService:
                 title=f"Summary: {chapter.title}",
                 content=summary_content
             )
-            
+
             quiz = self.create_learning_material(
                 chapter_id=chapter_id,
                 material_type="quiz",
@@ -107,14 +112,14 @@ class LearningMaterialsService:
                 content="Quiz content",
                 metadata=quiz_data
             )
-            
+
             booster = self.create_learning_material(
                 chapter_id=chapter_id,
                 material_type="booster",
                 title=f"Learning Booster: {chapter.title}",
                 content=booster_content
             )
-            
+
             return {
                 "summary": summary,
                 "quiz": quiz,

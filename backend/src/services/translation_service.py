@@ -3,8 +3,13 @@ from datetime import datetime, timedelta
 from typing import Optional
 import os
 import google.generativeai as genai
-from ..database import SessionLocal
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from ..database.session import engine
 from ..models.translation_cache import TranslationCache
+
+# Create SessionLocal using the engine from database.session
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class TranslationService:

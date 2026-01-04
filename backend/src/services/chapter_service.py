@@ -1,10 +1,15 @@
 from typing import List, Optional
-from src.database import SessionLocal
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from src.database.session import engine
 from src.models.chapter import TextbookChapter as Chapter
 from src.models.content_version import ContentVersion
 from src.models.user_progress import UserProgress
 from src.schemas.chapter import ChapterSchema
 from src.services.personalization_service import PersonalizationService
+
+# Create SessionLocal using the engine from database.session
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class ChapterService:
@@ -37,20 +42,20 @@ class ChapterService:
             chapter = self.db.query(Chapter).filter(Chapter.id == chapter_id).first()
             if not chapter:
                 return None
-            
+
             # Get user's progress for this chapter
             progress = self.db.query(UserProgress).filter(
                 UserProgress.user_id == user_id,
                 UserProgress.chapter_id == chapter_id
             ).first()
-            
+
             # Create the chapter schema
             chapter_schema = ChapterSchema.from_orm(chapter)
-            
+
             # Personalize content based on user profile
             personalized_content = self.personalization_service.personalize_content(user_id, chapter)
             chapter_schema.content = personalized_content
-            
+
             return chapter_schema
         finally:
             self.db.close()
@@ -64,10 +69,10 @@ class ChapterService:
             chapter = self.db.query(Chapter).filter(Chapter.id == chapter_id).first()
             if not chapter:
                 return None
-            
+
             # Create the chapter schema
             chapter_schema = ChapterSchema.from_orm(chapter)
-            
+
             # If a specific background level is provided, use it for personalization
             if background_level:
                 # Create temporary content based on background level
@@ -82,7 +87,7 @@ class ChapterService:
                 # Use user's profile for personalization
                 personalized_content = self.personalization_service.personalize_content(user_id, chapter)
                 chapter_schema.content = personalized_content
-            
+
             return chapter_schema
         finally:
             self.db.close()
