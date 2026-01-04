@@ -3,11 +3,12 @@ from groq import Groq
 
 class LLMService:
     def __init__(self):
-        # Environment variable se key uthana (Recommended)
+        # Sirf environment variable use karein
         self.api_key = os.getenv("GROQ_API_KEY")
+        
         if not self.api_key:
-            # Agar environment mein na mile toh fallback key yahan de sakte hain
-            self.api_key = "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"
+            # Error throw karein taaki pata chale key missing hai
+            raise ValueError("GROQ_API_KEY is not set in environment variables")
         
         self.client = Groq(api_key=self.api_key)
 
