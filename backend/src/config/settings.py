@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     neon_database_url: str = ""
 
     # Qdrant Vector Database Configuration
-    qdrant_url: str = "https://0ebab0e9-2f0f-4e48-affa-9e1ce491b5b8.us-east4-0.gcp.cloud.qdrant.io:6333"
-    qdrant_api_key: Optional[str] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.nR6XOHnDVIDBGzMC4y-uDlCUm0EBh53Z5bDt32uh6_E"
+    qdrant_url: str = "https://7037f042-3793-4cd2-a7ed-119755ba5396.us-east4-0.gcp.cloud.qdrant.io:6333"
+    qdrant_api_key: Optional[str] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.d47_AZDWkkI4dlZ7l5_OZIVxBEeAv36TTklI9qTkDlM"
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_https: str = "false"

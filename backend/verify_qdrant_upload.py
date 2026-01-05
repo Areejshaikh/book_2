@@ -14,8 +14,8 @@ def verify_qdrant_upload():
     Verify that the embeddings were successfully uploaded to Qdrant
     """
     # Configuration
-    QDRANT_URL = "https://0ebab0e9-2f0f-4e48-affa-9e1ce491b5b8.us-east4-0.gcp.cloud.qdrant.io:6333"
-    QDRANT_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.nR6XOHnDVIDBGzMC4y-uDlCUm0EBh53Z5bDt32uh6_E"
+    QDRANT_URL = "https://7037f042-3793-4cd2-a7ed-119755ba5396.us-east4-0.gcp.cloud.qdrant.io:6333"
+    QDRANT_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.d47_AZDWkkI4dlZ7l5_OZIVxBEeAv36TTklI9qTkDlM"
     COLLECTION_NAME = "deploy_book_embeddings"
 
     print(f"Connecting to Qdrant: {QDRANT_URL}")
