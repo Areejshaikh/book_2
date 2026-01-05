@@ -3,6 +3,7 @@ Configuration settings for the AI-powered book RAG system
 """
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 
 class Settings(BaseSettings):
@@ -17,15 +18,15 @@ class Settings(BaseSettings):
     api_version: str = "1.0.0"
 
     # Security Configuration
-    secret_key: str = "QmxwloIKk2JG3uxzRK4kyUjlgzKPFGRXAOYu2LuKQnY"
+    secret_key: str
 
     # Database Configuration
-    database_url: str = "postgresql://username:password@ep-xxx.us-east-1.aws.neon.tech/dbname?sslmode=require"
+    database_url: str
     neon_database_url: str = ""
 
     # Qdrant Vector Database Configuration
-    qdrant_url: str = "https://7037f042-3793-4cd2-a7ed-119755ba5396.us-east4-0.gcp.cloud.qdrant.io:6333"
-    qdrant_api_key: Optional[str] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.d47_AZDWkkI4dlZ7l5_OZIVxBEeAv36TTklI9qTkDlM"
+    qdrant_url: str
+    qdrant_api_key: Optional[str] = None
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_https: str = "false"
@@ -62,4 +63,18 @@ class Settings(BaseSettings):
 
 
 # Create a global settings instance
-settings = Settings()
+def get_settings():
+    settings = Settings()
+
+    # Validate required settings
+    if not settings.secret_key:
+        raise ValueError("SECRET_KEY environment variable must be set")
+    if not settings.database_url:
+        raise ValueError("DATABASE_URL environment variable must be set")
+    if not settings.qdrant_url:
+        raise ValueError("QDRANT_URL environment variable must be set")
+
+    return settings
+
+
+settings = get_settings()

@@ -11,10 +11,15 @@ def upload_embeddings_to_qdrant():
     """
     Upload embeddings from local storage to Qdrant with better error handling
     """
+    import os
     # Configuration - you may need to update these values
-    QDRANT_URL = "https://7037f042-3793-4cd2-a7ed-119755ba5396.us-east4-0.gcp.cloud.qdrant.io:6333"
-    QDRANT_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.d47_AZDWkkI4dlZ7l5_OZIVxBEeAv36TTklI9qTkDlM"
+    QDRANT_URL = os.getenv("QDRANT_URL")
+    QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
     COLLECTION_NAME = "deploy_book_embeddings"
+
+    if not QDRANT_URL or not QDRANT_API_KEY:
+        print("Error: QDRANT_URL and QDRANT_API_KEY environment variables must be set")
+        return
 
     print(f"QDRANT_URL: {QDRANT_URL}")
     print(f"COLLECTION_NAME: {COLLECTION_NAME}")

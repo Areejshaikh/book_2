@@ -6,12 +6,19 @@ from qdrant_client.models import PointStruct, VectorParams, Distance
 from urllib.parse import urljoin
 import time
 
+import os
+
 # 1. Configuration
 BASE_URL = "https://book-2-bay.vercel.app/docs/category/textbook-modules"
-GEMINI_API_KEY = "AIzaSyBw3bWN_nVmTQWPC3il4h97-Gj8usNquZ4"
-QDRANT_URL = "https://7037f042-3793-4cd2-a7ed-119755ba5396.us-east4-0.gcp.cloud.qdrant.io:6333"
-QDRANT_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.d47_AZDWkkI4dlZ7l5_OZIVxBEeAv36TTklI9qTkDlM"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 COLLECTION_NAME = "deploy_book_embeddings"
+
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable must be set")
+if not QDRANT_URL or not QDRANT_API_KEY:
+    raise ValueError("QDRANT_URL and QDRANT_API_KEY environment variables must be set")
 
 genai.configure(api_key=GEMINI_API_KEY)
 qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)

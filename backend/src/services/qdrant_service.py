@@ -6,8 +6,8 @@ from ..models.chat_response import RetrievedContext
 
 class QdrantRetrievalService:
     def __init__(self):
-        # ❌ PURANI KEYS CODE SE KHATAM KAR DI HAIN
-        # ✅ Ab ye Railway ke Variables se keys uthayega
+        # ❌ Purani hardcoded keys yahan se khatam kar di hain
+        # ✅ Ab ye code Railway ke "Variables" tab se keys pick karega
         self.url = os.getenv("QDRANT_URL")
         self.api_key = os.getenv("QDRANT_API_KEY")
         
@@ -43,7 +43,7 @@ class QdrantRetrievalService:
                 ))
             return contexts
         except Exception as e:
-            # Ye error ab tabhi aayega jab Railway ke variables ghalat honge
+            # Ye error ab tabhi aayega jab keys ghalat hongi
             print(f"DEBUG: Qdrant Search Error: {e}")
             return []
 
