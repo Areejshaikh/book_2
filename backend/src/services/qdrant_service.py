@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional
 from qdrant_client import QdrantClient
 import google.generativeai as genai
@@ -5,10 +6,18 @@ from ..models.chat_response import RetrievedContext
 
 class QdrantRetrievalService:
     def __init__(self):
-        self.url = "https://7037f042-3793-4cd2-a7ed-119755ba5396.us-east4-0.gcp.cloud.qdrant.io:6333"
-        self.api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.d47_AZDWkkI4dlZ7l5_OZIVxBEeAv36TTklI9qTkDlM"
+        # ❌ PURANI KEYS CODE SE KHATAM KAR DI HAIN
+        # ✅ Ab ye Railway ke Variables se keys uthayega
+        self.url = os.getenv("QDRANT_URL")
+        self.api_key = os.getenv("QDRANT_API_KEY")
+        
+        # Qdrant Client Setup
         self.client = QdrantClient(url=self.url, api_key=self.api_key, timeout=60)
-        genai.configure(api_key="AIzaSyBw3bWN_nVmTQWPC3il4h97-Gj8usNquZ4")
+        
+        # Gemini API Key for Embeddings
+        google_key = os.getenv("GOOGLE_API_KEY")
+        genai.configure(api_key=google_key)
+        
         self.model_name = "models/text-embedding-004"
         self.collection_name = "deploy_book_embeddings"
 
@@ -25,7 +34,6 @@ class QdrantRetrievalService:
 
             contexts = []
             for res in search_results:
-                # FIXED: Added missing book_id and embedding_id fields
                 contexts.append(RetrievedContext(
                     context_id=str(res.id),
                     chunk_text=res.payload.get("chunk_text", ""), 
@@ -35,11 +43,11 @@ class QdrantRetrievalService:
                 ))
             return contexts
         except Exception as e:
+            # Ye error ab tabhi aayega jab Railway ke variables ghalat honge
             print(f"DEBUG: Qdrant Search Error: {e}")
             return []
 
     def bypass_retrieval_for_selected_text(self, selected_text: str, book_id: str = None) -> List[RetrievedContext]:
-        # FIXED: Added missing fields here as well
         return [RetrievedContext(
             context_id="selected",
             chunk_text=selected_text,
