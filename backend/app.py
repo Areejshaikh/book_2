@@ -45,9 +45,14 @@ app = FastAPI(
 )
 
 # 5. CORS Middleware (Hugging Face aur Localhost ke liye)
+# Is line ko aisi hi rehne dein agar aap public API banana chahte hain,
+# lekin agar sirf apne frontend ke liye hai toh origins update kar dein:
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",        # Local development
+        "https://book-2-bay.vercel.app/"   # Aapka Vercel production link
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
