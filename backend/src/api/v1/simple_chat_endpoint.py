@@ -64,7 +64,7 @@ async def simple_chat_endpoint(request: SimpleChatRequest, req: Request):
         # Process the query using RAG service
         result = rag_service.get_answer(
             query=request.query,
-            book_id=request.bookId,
+            book_id=request.book_id,
             session_id=session_id
         )
 

@@ -4,7 +4,7 @@ import CitationDisplay from './CitationDisplay';
 import LoadingIndicator from './LoadingIndicator';
 import ErrorMessage from './ErrorMessage';
 
-const AIAssistant = ({ bookId, sessionId }) => {
+const AIAssistant = ({ book_id, sessionId }) => {
   const [question, setQuestion] = useState('');
   const [responses, setResponses] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

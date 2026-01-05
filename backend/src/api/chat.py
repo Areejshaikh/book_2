@@ -1,5 +1,5 @@
 """
-Chat API endpoint with query, bookId session_id parameters
+Chat API endpoint with query, book_id session_id parameters
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
@@ -85,7 +85,7 @@ async def process_chat_request(request: ChatRequest, req: Request):
         # Process the query using RAG service
         result = rag_service.get_answer(
             query=request.query,
-            book_id=request.bookId,
+            book_id=request.book_id,
             session_id=request.session_id,
             selected_text=request.selected_text
         )

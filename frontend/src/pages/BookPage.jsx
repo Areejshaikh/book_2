@@ -12,11 +12,11 @@ const BookPage = () => {
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(uuidv4()); // Generate a new session ID for this session
   const [selectedText, setSelectedText] = useState('');
-  const [bookId, setBookId] = useState(''); // This would normally come from props or URL
+  const [book_id, setBookId] = useState(''); // This would normally come from props or URL
 
   // For demo purposes, we'll use sample book content
   useEffect(() => {
-    // In a real implementation, you would fetch the book content based on the bookId
+    // In a real implementation, you would fetch the book content based on the book_id
     // For now, we'll use sample content
     const sampleContent = `# Introduction to Physical AI and Robotics
 
@@ -64,7 +64,7 @@ Machine learning, particularly reinforcement learning, has shown great promise i
       // Prepare the request payload
       const payload = {
         session_id: sessionId,
-        book_id: bookId,
+        book_id: book_id,
         query: query
       };
       
@@ -124,7 +124,7 @@ Machine learning, particularly reinforcement learning, has shown great promise i
           />
           <ChatInterface 
             sessionId={sessionId}
-            bookId={bookId}
+            book_id={book_id}
             messages={messages}
             loading={loading}
             onSend={handleSend}

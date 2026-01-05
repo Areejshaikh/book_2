@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import MessageBubble from './MessageBubble';
 import './ChatInterface.css';
 
-const ChatInterface = ({ sessionId, bookId, onSend, messages, loading }) => {
+const ChatInterface = ({ sessionId, book_id, onSend, messages, loading }) => {
   const [inputValue, setInputValue] = useState('');
   const [selectedText, setSelectedText] = useState('');
   const messagesEndRef = useRef(null);

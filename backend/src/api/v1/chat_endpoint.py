@@ -48,7 +48,7 @@ async def rag_chat_endpoint(request: ChatRequest, req: Request):
         # Humne 'selected_text' ko bhi pass kiya hai agar frontend se aaye
         result = rag_service.get_answer(
             query=request.query,
-            book_id=request.bookId,
+            book_id=request.book_id,
             session_id=request.session_id,
             selected_text=request.selected_text
         )
