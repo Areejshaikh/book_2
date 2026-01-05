@@ -9,7 +9,7 @@ router = APIRouter()
 @router.post("/chat")
 async def chat_endpoint(
     session_id: str,
-    book_id: str,
+    bookId: str,
     query: str,
     selected_text: Optional[str] = None,
     user_id: Optional[str] = None
@@ -43,7 +43,7 @@ async def chat_endpoint(
         rag_service = RAGService()
         response = rag_service.get_answer(
             query=query,
-            book_id=book_id,
+            book_id=bookId,
             session_id=session_id,
             selected_text=selected_text
         )

@@ -9,19 +9,19 @@ class RAGService:
         self.qdrant_service = qdrant_manager
         self.llm_service = LLMService()
 
-    def get_answer(self, query: str, book_id: str, session_id: str, selected_text: Optional[str] = None) -> dict:
+    def get_answer(self, query: str, bookId: str, session_id: str, selected_text: Optional[str] = None) -> dict:
         msg_id = str(uuid.uuid4())
         
         # 1. Context Retrieval
         if selected_text:
             retrieved_contexts = self.qdrant_service.bypass_retrieval_for_selected_text(
                 selected_text=selected_text, 
-                book_id=book_id
+                book_id=bookId
             )
         else:
             retrieved_contexts = self.qdrant_service.search_relevant_chunks(
                 query=query, 
-                book_id=book_id, 
+                book_id=bookId, 
                 top_k=5
             )
 
@@ -50,7 +50,7 @@ class RAGService:
                     "context_id": c.context_id,
                     "chunk_text": c.chunk_text,
                     "similarity_score": c.similarity_score,
-                    "book_id": book_id,
+                    "book_id": bookId,
                     "embedding_id": c.context_id
                 } for c in retrieved_contexts
             ],

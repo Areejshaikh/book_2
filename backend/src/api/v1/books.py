@@ -71,7 +71,7 @@ async def create_book(book_data: BookContentCreate):
         book = book_service.create_book(book_data)
 
         return {
-            "book_id": book.book_id,
+            "book_id": book.bookId,
             "title": book.title,
             "author": book.author,
             "status": "ready",  # In a real implementation, this might be "processing" initially
@@ -104,7 +104,7 @@ async def get_book(book_id: str):
             raise HTTPException(status_code=404, detail="Book not found")
 
         return {
-            "book_id": book.book_id,
+            "book_id": book.bookId,
             "title": book.title,
             "author": book.author,
             "status": "ready" if book.is_active else "inactive",
@@ -136,7 +136,7 @@ async def list_books():
         books = book_service.list_books()
         return [
             {
-                "book_id": book.book_id,
+                "book_id": book.bookId,
                 "title": book.title,
                 "author": book.author,
                 "status": "ready" if book.is_active else "inactive",

@@ -18,11 +18,11 @@ class BookService:
 
     def create_book(self, book_data: BookContentCreate) -> BookContent:
         """Create a new book and process its content"""
-        book_id = str(uuid4())
+        bookId = str(uuid4())
 
         # Create the book object
         book = BookContent(
-            book_id=book_id,
+            bookId=bookId,
             title=book_data.title,
             author=book_data.author,
             content=book_data.content,
@@ -34,14 +34,14 @@ class BookService:
         )
 
         # Store in "database" (in-memory for now)
-        self.books_db[book_id] = book
+        self.books_db[bookId] = book
 
         # Chunk the content and generate embeddings
-        self._process_book_content(book_id, book_data.content, book_data.chunk_size)
+        self._process_book_content(bookId, book_data.content, book_data.chunk_size)
 
         return book
 
-    def _process_book_content(self, book_id: str, content: str, chunk_size: int):
+    def _process_book_content(self, bookId: str, content: str, chunk_size: int):
         """Chunk the book content and generate embeddings for each chunk"""
         # Simple chunking by sentences
         sentences = re.split(r'[.!?]+', content)
@@ -76,9 +76,9 @@ class BookService:
         # Process each chunk
         for idx, chunk_text in enumerate(chunks):
             if chunk_text.strip():  # Only process non-empty chunks
-                self._process_chunk(book_id, idx, chunk_text)
+                self._process_chunk(bookId, idx, chunk_text)
 
-    def _process_chunk(self, book_id: str, chunk_index: int, chunk_text: str):
+    def _process_chunk(self, bookId: str, chunk_index: int, chunk_text: str):
         """Process a single chunk: generate embedding and store in Qdrant"""
         # Generate embedding for the chunk
         embedding = self.embedding_service.generate_embedding(chunk_text)
@@ -88,7 +88,7 @@ class BookService:
 
         # Store in Qdrant
         self.qdrant_manager.store_embedding(
-            book_id=book_id,
+            bookid=bookId,
             chunk_id=chunk_id,
             chunk_text=chunk_text,
             embedding=embedding,
@@ -101,7 +101,7 @@ class BookService:
         # Store in "database" (in-memory for now)
         chunk = ContentChunk(
             chunk_id=chunk_id,
-            book_id=book_id,
+            bookid=bookId,
             chunk_text=chunk_text,
             chunk_index=chunk_index,
             embedding_vector=embedding,
@@ -109,20 +109,20 @@ class BookService:
         )
         self.chunks_db[chunk_id] = chunk
 
-    def get_book(self, book_id: str) -> Optional[BookContent]:
+    def get_book(self, bookId: str) -> Optional[BookContent]:
         """Get a book by ID"""
-        return self.books_db.get(book_id)
+        return self.books_db.get(bookId)
 
     def list_books(self) -> List[BookContent]:
         """List all books"""
         return list(self.books_db.values())
 
-    def update_book(self, book_id: str, book_data: BookContentUpdate) -> Optional[BookContent]:
+    def update_book(self, bookId: str, book_data: BookContentUpdate) -> Optional[BookContent]:
         """Update a book"""
-        if book_id not in self.books_db:
+        if bookId not in self.books_db:
             return None
 
-        book = self.books_db[book_id]
+        book = self.books_db[bookId]
 
         # Update fields that are provided
         if book_data.title is not None:
@@ -133,14 +133,14 @@ class BookService:
             # If content is updated, we need to reprocess the entire book
             book.content = book_data.content
             # Remove old embeddings from Qdrant
-            self.qdrant_manager.delete_book_embeddings(book_id)
+            self.qdrant_manager.delete_book_embeddings(bookId)
             # Process new content
-            self._process_book_content(book_id, book_data.content, book.chunk_size)
+            self._process_book_content(bookId, book_data.content, book.chunk_size)
         if book_data.is_active is not None:
             book.is_active = book_data.is_active
 
         book.updated_at = datetime.now()
-        self.books_db[book_id] = book
+        self.books_db[bookId] = book
 
         return book
 
@@ -153,26 +153,26 @@ class BookService:
         book = self.create_book(book_data)
 
         # Count the number of embeddings created
-        book_chunks = [chunk for chunk in self.chunks_db.values() if chunk.book_id == book.book_id]
+        book_chunks = [chunk for chunk in self.chunks_db.values() if chunk.bookId == book.bookId]
         embedding_count = len(book_chunks)
 
         processing_time = time.time() - start_time
 
         return {
-            "book_id": book.book_id,
+            "bookid": book.bookId,
             "embedding_count": embedding_count,
             "processing_time": round(processing_time, 2)
         }
 
-    def delete_book(self, book_id: str):
+    def delete_book(self, bookid: str):
         """Delete a book and its embeddings"""
-        if book_id in self.books_db:
+        if bookid in self.books_db:
             # Remove embeddings from Qdrant
-            self.qdrant_manager.delete_book_embeddings(book_id)
+            self.qdrant_manager.delete_book_embeddings(bookid)
             # Remove from "database"
-            del self.books_db[book_id]
+            del self.books_db[bookid]
             # Remove related chunks
-            chunks_to_delete = [chunk_id for chunk_id, chunk in self.chunks_db.items() if str(chunk.book_id) == book_id]
+            chunks_to_delete = [chunk_id for chunk_id, chunk in self.chunks_db.items() if str(chunk.bookid) == bookid]
             for chunk_id in chunks_to_delete:
                 del self.chunks_db[chunk_id]
 

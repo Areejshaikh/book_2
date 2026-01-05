@@ -68,7 +68,7 @@ async def semantic_search(request: SemanticSearchRequest):
         # Perform semantic search using the retrieval service
         results = retrieval_service.search_relevant_chunks(
             query=request.query,
-            book_id=request.book_id,
+            book_id=request.bookId,
             limit=request.limit or 10,
             filters=request.filters
         )

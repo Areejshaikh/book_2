@@ -18,12 +18,12 @@ class SessionService:
         self.sessions: Dict[str, ChatSession] = {}
         self.session_timeout = timedelta(hours=24)  # Session expires after 24 hours
     
-    def create_session(self, book_id: str, user_id: Optional[str] = None) -> ChatSession:
+    def create_session(self, bookId: str, user_id: Optional[str] = None) -> ChatSession:
         """
         Create a new chat session
         
         Args:
-            book_id: The ID of the book for this session
+            bookId: The ID of the book for this session
             user_id: Optional user ID for authenticated users
             
         Returns:
@@ -35,7 +35,7 @@ class SessionService:
         session = ChatSession(
             session_id=session_id,
             user_id=user_id,
-            book_id=book_id,
+            bookId=bookId,
             created_at=now,
             updated_at=now,
             metadata={}

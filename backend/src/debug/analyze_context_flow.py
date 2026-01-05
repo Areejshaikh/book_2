@@ -13,7 +13,7 @@ from src.services.rag_service import RAGService
 from src.config.logging import log_context_flow
 
 
-def analyze_context_flow(query: str, book_id: str = "default_book"):
+def analyze_context_flow(query: str, bookId: str = "default_book"):
     """
     Analyze the context flow for a given query
     """
@@ -27,14 +27,14 @@ def analyze_context_flow(query: str, book_id: str = "default_book"):
     log_context_flow(
         component="DebugScript",
         message=f"Starting context flow analysis for query: {query}",
-        context_data={"query": query, "book_id": book_id, "analysis_start_time": datetime.now().isoformat()}
+        context_data={"query": query, "bookId": bookId, "analysis_start_time": datetime.now().isoformat()}
     )
     
     try:
         # Execute the RAG service to get an answer
         result = rag_service.get_answer(
             query=query,
-            book_id=book_id,
+            bookId=bookId,
             session_id="debug_session"
         )
         

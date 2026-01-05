@@ -65,7 +65,7 @@ async def rag_query(request: RAGQueryRequest):
         # Call the RAG service to get the answer
         result = rag_service.get_answer(
             query=request.query,
-            book_id=request.book_id,
+            book_id=request.bookId,
             session_id=request.session_id,
             selected_text=request.selected_text
         )
@@ -125,7 +125,7 @@ async def rag_query_selected(request: SelectedTextQueryRequest):
         # Call the RAG service with selected text context
         result = rag_service.get_answer(
             query=request.query,
-            book_id=request.book_id,
+            book_id=request.bookId,
             session_id=request.session_id,
             selected_text=request.selected_text
         )

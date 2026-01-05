@@ -28,7 +28,7 @@ class ChatService:
 
             # For now, use a default book_id - in a real implementation, this would come from user context
             # or be specified in the request
-            book_id = "default_book"  # This should be determined based on user context or request
+            bookId = "default_book"  # This should be determined based on user context or request
 
             # Generate a response using the RAG service - this will handle retrieval internally
             # The RAG service will only use the user's query and retrieved textbook content
@@ -36,7 +36,7 @@ class ChatService:
             self.logger.info(f"Generating response using RAG for user {user_id}")
             response_data = self.rag_service.generate_response(
                 query_text=query,
-                book_id=book_id,
+                bookId=bookId,
                 session_id=str(session_id),
                 user_id=str(user_id)
             )

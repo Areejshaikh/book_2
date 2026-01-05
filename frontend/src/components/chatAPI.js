@@ -27,7 +27,7 @@ export const chatAPI = {
         },
         body: JSON.stringify({
           query: query.trim(),
-          book_id: book_id,
+          book_id: bookId,
           session_id: finalSessionId,
         }),
       });

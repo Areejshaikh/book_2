@@ -75,7 +75,7 @@ class DBService:
             db_session = ChatSessionDB(
                 session_id=session.session_id,
                 user_id=session.user_id,
-                book_id=session.book_id,
+                book_id=session.bookId,
                 created_at=session.created_at,
                 updated_at=session.updated_at,
                 metadata_json=json.dumps(session.metadata) if session.metadata else None
@@ -159,7 +159,7 @@ class DBService:
             session = ChatSession(
                 session_id=db_session.session_id,
                 user_id=db_session.user_id,
-                book_id=db_session.book_id,
+                bookId=db_session.bookId,
                 created_at=db_session.created_at,
                 updated_at=db_session.updated_at,
                 metadata=metadata

@@ -1,5 +1,5 @@
 """
-Ask API endpoint with question, book_id, session_id parameters
+Ask API endpoint with question, bookId, session_id parameters
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
@@ -94,7 +94,7 @@ async def process_ask_request(request: AskRequest, req: Request):
         # Process the question using AI service
         result = ai_service.get_answer(
             query=request.question,
-            book_id=request.book_id,
+            book_id=request.bookId,
             session_id=request.session_id,
             selected_text=request.selected_text
         )
