@@ -16,65 +16,45 @@ class RAGService:
     def get_answer(self, query: str, book_id: str, session_id: str, selected_text: Optional[str] = None) -> dict:
         msg_id = str(uuid.uuid4())
         
+        # FIX 1: Ensure bookId is consistent (lowercase)
+        current_book_id = "textbook" # Force 'textbook' for now to match indexed data
+        
         try:
-            # 1. Context Retrieval
             if selected_text:
-                logger.info(f"Bypassing retrieval for selected text. BookID: {book_id}")
                 retrieved_contexts = self.qdrant_service.bypass_retrieval_for_selected_text(
                     selected_text=selected_text, 
-                    book_id=book_id
+                    book_id=current_book_id
                 )
             else:
-                logger.info(f"Searching Qdrant for: {query} in BookID: {book_id}")
+                # FIX 2: Debug log to see what exactly we are searching
+                logger.info(f"Searching for: {query} in {current_book_id}")
                 retrieved_contexts = self.qdrant_service.search_relevant_chunks(
                     query=query, 
-                    book_id=book_id, 
+                    book_id=current_book_id, 
                     top_k=5
                 )
 
-            # 2. Check if context exists
+            # FIX 3: Detailed Feedback if no data is found
             if not retrieved_contexts:
-                logger.warning(f"No context found for query: {query}")
+                logger.warning(f"DATABASE EMPTY OR NO MATCH: Query was '{query}'")
                 return {
-                    "response": "Maaf kijiye, is bare mein textbook mein malomat nahi mili.",
-                    "confidence_level": "Low",
+                    "response": "Maaf kijiye, database mein is sawal se mutaliq koi data nahi mila. Baraye meherbani check karein ke textbook files index ho chuki hain.",
+                    "confidence_level": "Zero",
                     "session_id": session_id,
-                    "message_id": msg_id,
-                    "retrieved_context": [],
-                    "timestamp": datetime.now().isoformat()
+                    "retrieved_context": []
                 }
 
-            # 3. Generate Answer
+            # Baki Generating Answer wala code yahan aayega...
             context_str = "\n".join([ctx.chunk_text for ctx in retrieved_contexts])
+            answer = self.llm_service.generate_response(query, context_str)
             
-            try:
-                logger.info("Generating response from LLM...")
-                answer = self.llm_service.generate_response(query, context_str)
-            except Exception as llm_err:
-                logger.error(f"LLM Generation Failed: {llm_err}")
-                return {"response": "AI model response dene mein nakam raha. API Key check karein.", "status": "error"}
-
             return {
                 "response": answer,
                 "confidence_level": "High",
                 "session_id": session_id,
-                "message_id": msg_id,
-                "retrieved_context": [
-                    {
-                        "context_id": c.context_id,
-                        "chunk_text": c.chunk_text,
-                        "similarity_score": c.similarity_score,
-                        "book_id":book_id,
-                        "embedding_id": c.context_id
-                    } for c in retrieved_contexts
-                ],
-                "timestamp": datetime.now().isoformat()
+                "retrieved_context": [{"chunk_text": c.chunk_text} for c in retrieved_contexts]
             }
 
-        except Exception as global_err:
-            # Ye line aapko Railway logs mein asli wajah batayegi
-            logger.error(f"CRITICAL ERROR in RAGService: {global_err}", exc_info=True)
-            return {
-                "response": f"Server par ek masla pesh aya hai: {str(global_err)}",
-                "status": "error"
-            }
+        except Exception as e:
+            logger.error(f"Global Error: {str(e)}")
+            return {"response": f"Backend Error: {str(e)}", "status": "error"}

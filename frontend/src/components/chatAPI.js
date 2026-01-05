@@ -14,7 +14,7 @@ const getBaseURL = () => {
 };
 
 export const chatAPI = {
-  sendMessage: async (query, book_id = 'default-book', sessionId = null) => {
+sendMessage: async (query, book_id = 'textbook', sessionId = null) => { 
     const backendUrl = getBaseURL();
     const finalSessionId = sessionId || `session_${Date.now()}`;
 
