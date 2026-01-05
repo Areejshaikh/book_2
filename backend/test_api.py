@@ -5,8 +5,8 @@ import requests
 import json
 
 # Base URL for the API (adjust as needed)
-BASE_URL = "http://localhost:8000"
 
+BASE_URL = "https://marvelous-delight-production.up.railway.app"
 def test_health_endpoint():
     """Test the health endpoint"""
     try:

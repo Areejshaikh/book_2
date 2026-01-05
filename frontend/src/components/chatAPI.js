@@ -1,53 +1,48 @@
 import { authService } from '../services/authService';
 
-// ✅ Correct backend base URL for browser environment
+// ✅ Fixed: Direct link to Railway
 const getBaseURL = () => {
-  // Check if we're in a browser environment and the variable is set via client module
-  if (typeof window !== 'undefined' && window.REACT_APP_API_BASE_URL) {
-    return window.REACT_APP_API_BASE_URL;
+  // Pehle check karein ke environment variable hai ya nahi
+  // Agar Vite use kar rahe hain toh: import.meta.env.VITE_API_URL
+  // Agar Create React App hai toh: process.env.REACT_APP_API_BASE_URL
+  
+  const envUrl = import.meta.env?.VITE_API_URL || process.env?.REACT_APP_API_BASE_URL;
+
+  if (envUrl) {
+    return envUrl;
   }
-  // Check for environment variable in different possible locations
-  if (typeof window !== 'undefined' && window.ENV?.REACT_APP_API_BASE_URL) {
-    return window.ENV.REACT_APP_API_BASE_URL;
-  }
-  // Default fallback
-  return 'http://localhost:8000';
+
+  // Agar koi variable nahi mila, toh default Railway link use karein
+  return 'https://marvelous-delight-production.up.railway.app';
 };
 
 export const chatAPI = {
-  /**
-   * Send message to chat backend
-   */
   sendMessage: async (
     query,
     bookId = 'default-book',
     sessionId = null,
     backendUrlOverride = null
   ) => {
+    // Railway ka sahi URL yahan set ho jayega
     const backendUrl = backendUrlOverride || getBaseURL();
 
-    // Generate session ID if not provided
     if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
     if (!query || query.trim().length === 0) {
       throw new Error('Query cannot be empty');
     }
 
-    if (query.length > 1000) {
-      throw new Error('Query is too long (max 1000 characters)');
-    }
-
     try {
+      // Is line mein ab localhost nahi, Railway link jayega
       const response = await fetch(`${backendUrl}/api/v1/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        // 'include' credentials tabhi use karein agar aap Cookies use kar rahe hain
+        // Varna isay hata dena behtar hai
         body: JSON.stringify({
           query: query.trim(),
           book_id: bookId,
@@ -57,53 +52,34 @@ export const chatAPI = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.detail ||
-            errorData.error ||
-            `HTTP Error ${response.status}`
-        );
+        throw new Error(errorData.detail || errorData.error || `HTTP Error ${response.status}`);
       }
 
       return await response.json();
     } catch (error) {
       if (error.name === 'TypeError') {
-        throw new Error('Network error: Backend not reachable');
+        throw new Error('Network error: Backend not reachable at ' + backendUrl);
       }
       throw error;
     }
   },
 
-  /**
-   * Get conversation history
-   */
   getConversationHistory: async (userId, backendUrlOverride = null) => {
     const backendUrl = backendUrlOverride || getBaseURL();
-
-    if (!userId) {
-      throw new Error('User ID is required');
-    }
+    if (!userId) throw new Error('User ID is required');
 
     try {
       const response = await fetch(`${backendUrl}/api/v1/chat`, {
         method: 'GET',
-        credentials: 'include',
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.detail ||
-            errorData.error ||
-            `HTTP Error ${response.status}`
-        );
+        throw new Error(errorData.detail || errorData.error || `HTTP Error ${response.status}`);
       }
-
       return await response.json();
     } catch (error) {
-      if (error.name === 'TypeError') {
-        throw new Error('Network error: Backend not reachable');
-      }
-      throw error;
+      throw new Error('Network error: Backend not reachable');
     }
   },
 };

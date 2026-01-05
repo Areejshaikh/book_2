@@ -11,7 +11,7 @@ const getAPIBaseUrl = () => {
     return window.ENV.NEXT_PUBLIC_API_URL;
   }
   // Default fallback
-  return 'http://localhost:8000/api/v1';
+  return 'https://marvelous-delight-production.up.railway.app/docs';
 };
 
 const API_BASE_URL = getAPIBaseUrl();
