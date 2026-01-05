@@ -1,8 +1,16 @@
 import { authService } from '../services/authService';
 
+// ✅ Fixed: Vite friendly URL fetching
 const getBaseURL = () => {
-  const envUrl = import.meta.env?.VITE_API_URL || process.env?.REACT_APP_API_BASE_URL;
-  return envUrl || 'https://marvelous-delight-production.up.railway.app';
+  // Vite projects mein 'import.meta.env' use hota hai
+  const envUrl = import.meta.env?.VITE_API_URL;
+
+  if (envUrl) {
+    return envUrl;
+  }
+
+  // Agar variable nahi milta toh direct Railway link (Default)
+  return 'https://marvelous-delight-production.up.railway.app';
 };
 
 export const chatAPI = {
@@ -15,9 +23,8 @@ export const chatAPI = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json', // Ye line add karein
+          'Accept': 'application/json',
         },
-        // Credentials wali line maine hata di hai security ke liye
         body: JSON.stringify({
           query: query.trim(),
           book_id: bookId,
@@ -27,13 +34,13 @@ export const chatAPI = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Server Error: ${response.status} - ${errorText}`);
+        throw new Error(`Server Error: ${response.status}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error("Fetch error details:", error);
-      throw new Error('Backend connection failed. Please check if Railway is awake.');
+      console.error("Fetch error:", error);
+      throw error;
     }
   },
 
@@ -46,7 +53,7 @@ export const chatAPI = {
       });
       return await response.json();
     } catch (error) {
-      throw new Error('Could not fetch history');
+      throw new Error('Network error');
     }
   },
 };
