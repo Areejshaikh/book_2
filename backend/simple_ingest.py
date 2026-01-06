@@ -1,3 +1,4 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 import google.generativeai as genai
@@ -5,75 +6,73 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance
 from urllib.parse import urljoin
 import time
+from dotenv import load_dotenv # Agar .env file use kar rahe hain
 
-import os
+# .env file se variables load karne ke liye
+load_dotenv()
 
-# 1. Configuration
+# --- CONFIGURATION (Ab ye env se ayenge) ---
 BASE_URL = "https://book-2-bay.vercel.app/docs/category/textbook-modules"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-COLLECTION_NAME = "deploy_book_embeddings"
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "textbook_vectors")
 
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY environment variable must be set")
-if not QDRANT_URL or not QDRANT_API_KEY:
-    raise ValueError("QDRANT_URL and QDRANT_API_KEY environment variables must be set")
+# Check karein ke variables mil rahe hain ya nahi
+if not all([GEMINI_API_KEY, QDRANT_URL, QDRANT_API_KEY]):
+    print("Error: Environment variables (GEMINI_API_KEY, QDRANT_URL, QDRANT_API_KEY) nahi mile!")
+    exit()
 
+# Setup
 genai.configure(api_key=GEMINI_API_KEY)
 qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 
-def get_links(url):
-    """Website se saare modules ke links nikalne ke liye"""
-    response = requests.get(url)
+def start_ingestion():
+    print("Creating collection...")
+    # Collection dobara banana
+    qdrant_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=768, distance=Distance.COSINE)
+    )
+
+    print("Fetching links...")
+    response = requests.get(BASE_URL)
     soup = BeautifulSoup(response.text, 'html.parser')
-    links = []
-    # Docusaurus sidebar ya main content se links dhoondna
-    for a in soup.find_all('a', href=True):
-        if '/docs/' in a['href']:
-            links.append(urljoin(url, a['href']))
-    return list(set(links)) # Unique links
+    all_urls = [urljoin(BASE_URL, a['href']) for a in soup.find_all('a', href=True) if '/docs/' in a['href']]
+    all_urls = list(set(all_urls)) or [BASE_URL]
 
-def run_advanced_ingestion():
-    # 1. Pehle saare links dhoondein
-    print("Searching for module links...")
-    all_urls = get_links(BASE_URL)
-    if not all_urls:
-        all_urls = [BASE_URL]
-    
-    print(f"Found {len(all_urls)} pages to scrape.")
-    
-    all_points = []
     point_id = 0
-
-    # 2. Har link par ja kar data nikaalein
     for url in all_urls:
-        print(f"Scraping content from: {url}")
+        print(f"Processing: {url}")
         res = requests.get(url)
         soup = BeautifulSoup(res.text, 'html.parser')
-        
-        # Sirf kaam ka text uthana (Article content)
         content = soup.find('article') or soup.find('main')
         if not content: continue
-        
+
         text = content.get_text(separator=' ', strip=True)
-        
-        # Chunks banana
+        # Create overlapping chunks to preserve context
         chunks = [text[i:i+1000] for i in range(0, len(text), 900)]
-        
+
+        points = []
         for chunk in chunks:
             result = genai.embed_content(model="models/text-embedding-004", content=chunk)
-            all_points.append(PointStruct(
+            points.append(PointStruct(
                 id=point_id,
                 vector=result['embedding'],
-                payload={"chunk_text": chunk, "source": url, "book_id": "default-book"}
+                payload={
+                    "chunk_text": chunk,
+                    "source": url,
+                    "book_id": "textbook-1",
+                    "chunk_index": point_id
+                }
             ))
             point_id += 1
-        time.sleep(1) # API slow down
 
-    # 3. Qdrant mein upload karein
-    qdrant_client.upsert(collection_name=COLLECTION_NAME, points=all_points)
-    print(f"✅ SUCCESS: {len(all_points)} chunks ingested from {len(all_urls)} pages!")
+        if points:
+            qdrant_client.upsert(collection_name=COLLECTION_NAME, points=points)
+        time.sleep(1)  # Rate limiting to avoid API limits
+
+    print(f"✅ SUCCESS: Total {point_id} points upload ho gaye to collection '{COLLECTION_NAME}'.")
 
 if __name__ == "__main__":
-    run_advanced_ingestion()
+    start_ingestion()
