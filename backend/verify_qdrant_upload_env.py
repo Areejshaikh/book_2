@@ -14,7 +14,7 @@ def verify_qdrant_upload():
     # Get configuration from environment
     QDRANT_URL = os.getenv("QDRANT_URL")
     QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-    COLLECTION_NAME = "deploy_book_embeddings"  # Using the collection we created
+    COLLECTION_NAME = "textbook_vectors"  # Using the collection we created
 
     if not QDRANT_URL or not QDRANT_API_KEY:
         print("QDRANT_URL or QDRANT_API_KEY not found in environment variables")

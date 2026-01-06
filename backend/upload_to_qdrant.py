@@ -56,7 +56,7 @@ def upload_embeddings_to_qdrant():
         print(f"Loaded metadata for {len(metadata)} chunks")
 
         # Use a new collection name to avoid permission issues
-        collection_name = "deploy_book_embeddings"
+        collection_name = os.getenv("QDRANT_COLLECTION_NAME")
 
         # Check if collection exists
         collections = client.get_collections()

@@ -18,7 +18,7 @@ class PipelineConfig:
 
     # Fields with defaults
     embed_model: str = "embed-english-v2.0"
-    collection_name: str = "deploy_book_embeddings"
+    collection_name: str = "textbook_vectors"
 
     # Processing settings
     chunk_size: int = 512

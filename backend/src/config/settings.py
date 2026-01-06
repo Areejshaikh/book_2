@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     qdrant_https: str = "false"
 
     # Qdrant Collection Configuration
-    qdrant_collection_name: str = "deploy_book_embeddings"
+    qdrant_collection_name: str = "textbook_vectors"
     qdrant_vector_size: int = 1536
     qdrant_distance: str = "Cosine"
 

@@ -45,7 +45,7 @@ python main.py --help
 - `--chunk-size`: Size of text chunks in tokens (default: 512)
 - `--overlap`: Overlap between chunks as percentage (default: 0.2)
 - `--embed-model`: Cohere model to use for embeddings (default: "embed-english-v2.0")
-- `--collection-name`: Qdrant collection name (default: "deploy_book_embeddings")
+- `--collection-name`: Qdrant collection name (default: "textbook_vectors")
 - `--batch-size`: Number of chunks to process in each batch (default: 10)
 
 ## Edge Cases and Error Scenarios

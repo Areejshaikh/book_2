@@ -19,7 +19,7 @@ class QdrantRetrievalService:
         genai.configure(api_key=google_key)
         
         self.model_name = "models/text-embedding-004"
-        self.collection_name = "deploy_book_embeddings"
+        self.collection_name = "textbook_vectors"
 
     def search_relevant_chunks(self, query: str, book_id: str = None, top_k: int = 5) -> List[RetrievedContext]:
         try:

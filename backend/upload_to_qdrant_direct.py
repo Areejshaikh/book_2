@@ -15,7 +15,7 @@ def upload_embeddings_to_qdrant():
     # Configuration - you may need to update these values
     QDRANT_URL = os.getenv("QDRANT_URL")
     QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-    COLLECTION_NAME = "deploy_book_embeddings"
+    COLLECTION_NAME = "textbook_vectors"
 
     if not QDRANT_URL or not QDRANT_API_KEY:
         print("Error: QDRANT_URL and QDRANT_API_KEY environment variables must be set")
