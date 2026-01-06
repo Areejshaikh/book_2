@@ -22,7 +22,7 @@ class QdrantConfig:
     API_KEY = os.getenv("QDRANT_API_KEY")
 
     # Collections configuration
-    COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "textbook_vectors")
+    COLLECTION_NAME = os.getenv("textbook_vectors")
     VECTOR_SIZE = int(os.getenv("QDRANT_VECTOR_SIZE", "1536"))  # Updated to match Cohere embeddings
     DISTANCE = os.getenv("QDRANT_DISTANCE", "Cosine")
 
