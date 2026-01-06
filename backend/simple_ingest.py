@@ -16,7 +16,7 @@ BASE_URL = "https://book-2-bay.vercel.app/docs/category/textbook-modules"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "textbook_vectors")
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", )
 
 # Check karein ke variables mil rahe hain ya nahi
 if not all([GEMINI_API_KEY, QDRANT_URL, QDRANT_API_KEY]):
